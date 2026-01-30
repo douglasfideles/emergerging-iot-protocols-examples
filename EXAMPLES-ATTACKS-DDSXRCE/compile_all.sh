@@ -1,41 +1,96 @@
 #!/bin/bash
 
-echo "=== Compiling DDS Attack Tools ==="
+echo "=== Compilando Todos os Ataques DDS ==="
 echo ""
 
-# Check for required libraries
+# Verificar dependências
 if ! pkg-config --exists microxrcedds_client; then
-    echo "[ERROR] microxrcedds_client not found!"
-    echo "Install with: sudo apt install libmicroxrcedds-client-dev"
+    echo "[ERROR] microxrcedds_client não encontrado!"
+    echo "Instale com o script de instalação primeiro"
     exit 1
 fi
 
-ATTACKS=(
+# Criar diretórios
+mkdir -p bin
+mkdir -p logs
+
+# Lista de ataques C
+C_ATTACKS=(
     "attack_session_hijack"
     "attack_entity_flood"
-    "attack_malformed_inject"
     "attack_time_desync"
-    "attack_discovery_poison"
-    "attack_request_race"
+    "attack_malformed_inject"
     "attack_fragment_abuse"
+    "attack_ping_flood"
 )
 
-for attack in "${ATTACKS[@]}"; do
-    echo "[*] Compiling $attack..."
-    gcc ${attack}.c -o $attack \
-        -lmicroxrcedds_client \
-        -lmicrocdr \
-        -lpthread \
-        -O2 \
-        -Wall
-    
-    if [ $? -eq 0 ]; then
-        echo "[+] $attack compiled successfully"
+# Ataque especial que não precisa das libs DDS
+SPECIAL_ATTACKS=(
+    "attack_discovery_poison"
+)
+
+# Flags de compilação para ataques DDS
+DDS_CFLAGS="-Wall -Wextra -O2"
+DDS_LIBS="-lmicroxrcedds_client -lmicrocdr -lpthread"
+
+# Flags para ataques especiais
+SPECIAL_CFLAGS="-Wall -Wextra -O2"
+SPECIAL_LIBS="-lpthread"
+
+echo "Compilando ataques DDS..."
+echo ""
+
+for attack in "${C_ATTACKS[@]}"; do
+    if [ -f "${attack}.c" ]; then
+        echo "[*] Compilando $attack..."
+        
+        gcc ${attack}.c -o bin/$attack ${DDS_CFLAGS} ${DDS_LIBS}
+        
+        if [ $? -eq 0 ]; then
+            echo "[✓] $attack compilado com sucesso"
+            chmod +x bin/$attack
+        else
+            echo "[✗] Falha ao compilar $attack"
+        fi
     else
-        echo "[-] Failed to compile $attack"
+        echo "[!] Arquivo ${attack}.c não encontrado"
     fi
     echo ""
 done
 
-echo "=== Compilation Complete ==="
-ls -lh attack_*
+echo "Compilando ataques especiais (sem dependências DDS)..."
+echo ""
+
+for attack in "${SPECIAL_ATTACKS[@]}"; do
+    if [ -f "${attack}.c" ]; then
+        echo "[*] Compilando $attack..."
+        
+        gcc ${attack}.c -o bin/$attack ${SPECIAL_CFLAGS} ${SPECIAL_LIBS}
+        
+        if [ $? -eq 0 ]; then
+            echo "[✓] $attack compilado com sucesso"
+            chmod +x bin/$attack
+        else
+            echo "[✗] Falha ao compilar $attack"
+        fi
+    else
+        echo "[!] Arquivo ${attack}.c não encontrado"
+    fi
+    echo ""
+done
+
+echo ""
+echo "=== Compilação Completa ==="
+echo ""
+echo "Ataques disponíveis em ./bin/:"
+ls -lh bin/
+
+echo ""
+echo "Para executar:"
+echo "  ./bin/attack_session_hijack <ip> <port>"
+echo "  ./bin/attack_entity_flood <ip> <port>"
+echo "  ./bin/attack_time_desync <ip> <port>"
+echo "  ./bin/attack_malformed_inject <ip> <port>"
+echo "  ./bin/attack_fragment_abuse <ip> <port>"
+echo "  ./bin/attack_ping_flood <ip> <port>"
+echo "  sudo ./bin/attack_discovery_poison <malicious_ip>"
