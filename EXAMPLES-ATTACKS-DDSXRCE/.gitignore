@@ -1,0 +1,34 @@
+# Compiled binaries
+bin/
+*.o
+*.a
+*.so
+*.so.*
+*.out
+
+# Logs
+logs/
+*.log
+
+# Build directories
+build/
+cmake-build-*/
+
+# Agent directory (if downloaded)
+agent/
+
+# Temporary files
+*.tmp
+*.bak
+*.swp
+*~
+
+# OS specific
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# IDE
+.vscode/
+.idea/
+*.code-workspace

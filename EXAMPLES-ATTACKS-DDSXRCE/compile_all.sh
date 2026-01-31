@@ -4,11 +4,19 @@ echo "=== Compilando Todos os Ataques DDS ==="
 echo ""
 
 # Verificar dependências
-if ! pkg-config --exists microxrcedds_client; then
+if [ ! -f "/usr/local/lib/libmicroxrcedds_client.a" ]; then
     echo "[ERROR] microxrcedds_client não encontrado!"
     echo "Instale com o script de instalação primeiro"
     exit 1
 fi
+
+if [ ! -f "/usr/local/microcdr-2.0.2/lib/libmicrocdr.a" ] && [ ! -f "/usr/local/lib/libmicrocdr.a" ]; then
+    echo "[ERROR] microcdr não encontrado!"
+    echo "Instale com o script de instalação primeiro"
+    exit 1
+fi
+
+echo "[✓] Dependências encontradas"
 
 # Criar diretórios
 mkdir -p bin
@@ -30,8 +38,8 @@ SPECIAL_ATTACKS=(
 )
 
 # Flags de compilação para ataques DDS
-DDS_CFLAGS="-Wall -Wextra -O2"
-DDS_LIBS="-lmicroxrcedds_client -lmicrocdr -lpthread"
+DDS_CFLAGS="-Wall -Wextra -O2 -I/usr/local/include -I/usr/local/microcdr-2.0.2/include"
+DDS_LIBS="-L/usr/local/lib -L/usr/local/microcdr-2.0.2/lib -lmicroxrcedds_client -lmicrocdr -lpthread"
 
 # Flags para ataques especiais
 SPECIAL_CFLAGS="-Wall -Wextra -O2"
