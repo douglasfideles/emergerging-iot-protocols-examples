@@ -1,0 +1,69 @@
+# Compiled binaries
+bin/
+*.o
+*.a
+*.so
+*.so.*
+*.out
+*.exe
+
+# Logs
+logs/
+*.log
+
+# Build directories
+build/
+cmake-build-*/
+dist/
+
+# Agent directory (if downloaded)
+agent/
+Micro-XRCE-DDS-Agent/
+
+# Zenoh dependencies
+zenoh-pico/
+zenoh/
+
+# Temporary files
+*.tmp
+*.bak
+*.swp
+*~
+.~*
+
+# OS specific
+.DS_Store
+Thumbs.db
+desktop.ini
+ehthumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.code-workspace
+.vs/
+*.suo
+*.user
+
+# Debug files
+*.dSYM/
+*.pdb
+core
+vgcore.*
+
+# Package managers
+node_modules/
+.npm/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.pytest_cache/
+.venv/
+venv/
+
+# Docker
+.dockerignore
+docker-compose.override.yml
